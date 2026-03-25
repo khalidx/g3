@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+if [[ "$#" -eq 1 && "$1" == "version" ]]; then
+  jq -r '.version' "$(dirname "$0")/../package.json"
+  exit 0
+fi
+
+if [[ "$#" -gt 0 ]]; then
+  echo "Error: Invalid command or arguments." >&2
+  exit 1
+fi
+
+cat <<'EOF'
+
+╭─╴╭─╮
+│╶╮╶─┤
+╰─╯╰─╯
+
+Welcome to the g3 CLI!
+
+EOF

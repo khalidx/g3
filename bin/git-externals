@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "bun not found; installing via npm..."
+  npm install -g bun
+fi
+
+bun run "$(dirname "$0")/../src/index.ts" "$@"
