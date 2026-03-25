@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-if [[ "$#" -eq 1 && "$1" == "version" ]]; then
-  jq -r '.version' "$(dirname "$0")/../package.json"
-  exit 0
-fi
+check_command_exists () {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "$1 not found; please install $1 to use the g3 CLI."
+    exit 1
+  fi
+}
 
 if [[ "$#" -gt 0 ]]; then
-  echo "Error: Invalid command or arguments." >&2
-  exit 1
+  check_command_exists "bun" || (
+    check_command_exists "npm" || check_command_exists "node"
+    echo "bun not found; installing via npm..."
+    npm install -g bun
+  )
+  bun run "$(dirname "$0")/../src/index.ts" -- "$@"
+  exit 0
 fi
 
 cat <<'EOF'
