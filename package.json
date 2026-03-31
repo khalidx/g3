@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "module": "src/index.ts",
+  "scripts": {
+    "build:binaries": "bun run src/scripts/build.ts"
+  },
   "dependencies": {
     "zod": "^4.3.6"
   },
