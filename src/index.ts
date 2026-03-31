@@ -1,5 +1,4 @@
-import packageJson from '../package.json'
-import * as types from './types'
+import { CommandSchema } from './types'
 
 import { parseArgs } from 'node:util'
 
@@ -9,15 +8,22 @@ export async function cli (params: { args: string[] }) {
     strict: true,
     allowPositionals: true,
     options: {
-      json: { type: 'boolean' }
+      version: { type: 'boolean', default: false },
+      json: { type: 'boolean', default: false }
     }
   })
-  if (command === 'version' && rest.length === 0) {
-    if (values.json) console.info({ version: packageJson.version })
-    else console.info(packageJson.version)
-  } else if (command === 'types' && rest.length === 0) {
-    if (values.json) console.info(Object.keys(types))
-    else console.info(Object.keys(types).map(type => `- ${type}`).join('\n'))
+  const m = (
+    (values.version) ? await import('./commands/version') :
+    (!command && !rest.length) ? await import('./commands/welcome') :
+    (command === 'welcome' && !rest.length) ? await import('./commands/welcome') :
+    (command === 'version' && !rest.length) ? await import('./commands/version') :
+    (command === 'install' && !rest.length) ? await import('./commands/install') :
+    (command === 'externals' && !rest.length) ? await import('./commands/externals') :
+    undefined
+  )
+  if (m) {
+    const command = CommandSchema.parse(m.command)
+    await command.handler({ values })
   } else {
     if (values.json) console.error({ error: 'Invalid command or arguments.' })
     else console.error(`Error: Invalid command or arguments.`)
