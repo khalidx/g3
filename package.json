@@ -1,0 +1,20 @@
+{
+  "name": "v-vcs",
+  "version": "0.1.0",
+  "description": "A pluggable, lightweight version control system compatible with git and svn",
+  "type": "module",
+  "bin": {
+    "v": "./bin/v.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts --outdir dist --target node",
+    "test": "bun test",
+    "lint": "bun run tsc --noEmit"
+  },
+  "private": true,
+  "devDependencies": {},
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
