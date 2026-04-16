@@ -121,6 +121,7 @@ export class SyncEngine {
     this.startWatching();
 
     const engine = this;
+    const wsPeerIds = new WeakMap<object, string>();
 
     Bun.serve({
       port,
@@ -131,7 +132,7 @@ export class SyncEngine {
       websocket: {
         open(ws) {
           const id = randomUUID().slice(0, 8);
-          (ws as any).__peerId = id;
+          wsPeerIds.set(ws, id);
           engine.addPeer({
             id,
             send: (data: string) => ws.send(data),
@@ -146,9 +147,9 @@ export class SyncEngine {
               content: raw.content ? new Uint8Array(Buffer.from(raw.content, "base64")) : undefined,
             };
             engine.applyEvent(evt);
-            // Re-broadcast to other peers
+            const senderId = wsPeerIds.get(ws);
             for (const peer of engine.peers.values()) {
-              if (peer.id !== (ws as any).__peerId) {
+              if (peer.id !== senderId) {
                 peer.send(typeof msg === "string" ? msg : new TextDecoder().decode(msg));
               }
             }
@@ -157,7 +158,8 @@ export class SyncEngine {
           }
         },
         close(ws) {
-          engine.removePeer((ws as any).__peerId);
+          const id = wsPeerIds.get(ws);
+          if (id) engine.removePeer(id);
         },
       },
     });
