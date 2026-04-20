@@ -1,0 +1,18 @@
+{
+  "name": "g3",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "module": "src/index.ts",
+  "bin": {
+    "g3": "src/index.ts",
+    "git-g3": "src/index.ts"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

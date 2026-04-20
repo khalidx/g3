@@ -1,5 +1,5 @@
-import type { Command } from '../types'
-import packageJson from '../../package.json'
+import type { Command } from '../types.ts'
+import packageJson from '../../package.json' with { type: 'json' }
 
 export const command: Command = {
   name: 'version',

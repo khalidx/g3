@@ -4,15 +4,25 @@
   "version": "0.1.0",
   "type": "module",
   "module": "src/index.ts",
+  "bin": {
+    "g3": "bin/g3.ts",
+    "git-g3": "bin/git-g3",
+    "git-externals": "bin/git-externals"
+  },
+  "files": [
+    "src/",
+    "bin/"
+  ],
   "scripts": {
-    "build:binaries": "bun run src/scripts/build.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "picocolors": "^1.1.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.12.2"
   },
   "peerDependencies": {
     "typescript": "^5"

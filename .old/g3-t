@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly EXEC_DIR="${REPO_ROOT}/exec"
+
+detect_terminal () {
+  if [[ -n "${TERM_PROGRAM:-}" ]]; then
+    printf '%s\n' "${TERM_PROGRAM}"
+    return 0
+  fi
+
+  if [[ -n "${SHELL:-}" ]]; then
+    printf '%s\n' "$(basename "${SHELL}")"
+    return 0
+  fi
+
+  if [[ -n "${ComSpec:-}" ]]; then
+    printf '%s\n' "$(basename "${ComSpec}")"
+    return 0
+  fi
+
+  printf '%s\n' "unknown"
+}
+
+detect_binary_name () {
+  local os arch terminal
+  os="$(uname -s)"
+  arch="$(uname -m)"
+  terminal="$(detect_terminal)"
+
+  case "${os}:${arch}" in
+    Linux:x86_64)
+      printf '%s\n' 'g3-linux-x64'
+      ;;
+    Darwin:x86_64)
+      printf '%s\n' 'g3-darwin-x64'
+      ;;
+    MINGW64_NT-*:x86_64|MSYS_NT-*:x86_64|CYGWIN_NT-*:x86_64)
+      printf '%s\n' 'g3-windows-x64.exe'
+      ;;
+    *)
+      echo "Unsupported platform/terminal: ${os} ${arch} (${terminal})" >&2
+      return 1
+      ;;
+  esac
+}
+
+binary_name="$(detect_binary_name)"
+binary_path="${EXEC_DIR}/${binary_name}"
+
+if [[ ! -f "${binary_path}" ]]; then
+  echo "Missing binary for this platform: ${binary_path}" >&2
+  exit 1
+fi
+
+if [[ ! -x "${binary_path}" ]]; then
+  chmod +x "${binary_path}"
+fi
+
+exec "${binary_path}" "$@"

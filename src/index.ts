@@ -1,4 +1,4 @@
-import { CommandSchema } from './types'
+import { CommandSchema } from './types.ts'
 
 import { parseArgs } from 'node:util'
 
@@ -13,12 +13,11 @@ export async function cli (params: { args: string[] }) {
     }
   })
   const m = (
-    (values.version) ? await import('./commands/version') :
-    (!command && !rest.length) ? await import('./commands/welcome') :
-    (command === 'welcome' && !rest.length) ? await import('./commands/welcome') :
-    (command === 'version' && !rest.length) ? await import('./commands/version') :
-    (command === 'install' && !rest.length) ? await import('./commands/install') :
-    (command === 'externals' && !rest.length) ? await import('./commands/externals') :
+    (values.version) ? await import('./commands/version.ts') :
+    (!command && !rest.length) ? await import('./commands/welcome.ts') :
+    (command === 'welcome' && !rest.length) ? await import('./commands/welcome.ts') :
+    (command === 'version' && !rest.length) ? await import('./commands/version.ts') :
+    (command === 'externals' && !rest.length) ? await import('./commands/externals.ts') :
     undefined
   )
   if (m) {

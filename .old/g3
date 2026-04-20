@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -eou pipefail
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+exec_dir="${script_dir}/../exec"
+exec_shim="${exec_dir}/g3"
+github_repo="${G3_GITHUB_REPO:-khalidx/g3}"
+
+check_command_exists () {
+  if command -v "$1" >/dev/null 2>&1; then
+    return 0
+  fi
+  return 1
+}
+
+download_file () {
+  local url="$1"
+  local output="$2"
+
+  if check_command_exists curl; then
+    curl -fsSL "$url" -o "$output"
+    return 0
+  fi
+
+  if check_command_exists wget; then
+    wget -qO "$output" "$url"
+    return 0
+  fi
+
+  echo "Neither curl nor wget is available to download g3 binary."
+  exit 1
+}
+
+resolve_exec_binary () {
+  local os
+  local arch
+  local exec_name
+
+  case "$(uname -s)" in
+    Linux)
+      os="linux"
+      ;;
+    Darwin)
+      os="darwin"
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      os="windows"
+      ;;
+    *)
+      echo "Unsupported operating system: $(uname -s)"
+      exit 1
+      ;;
+  esac
+
+  case "$(uname -m)" in
+    x86_64|amd64)
+      arch="x64"
+      ;;
+    arm64|aarch64)
+      arch="arm64"
+      ;;
+    *)
+      echo "Unsupported architecture: $(uname -m)"
+      exit 1
+      ;;
+  esac
+
+  exec_name="g3-${os}-${arch}"
+  if [[ "$os" == "windows" ]]; then
+    exec_name="${exec_name}.exe"
+  fi
+
+  echo "${exec_dir}/${exec_name}"
+}
+1
+ensure_exec_binary () {
+  local exec_binary="$1"
+  local exec_name
+  local download_url
+
+  if [[ -x "$exec_binary" ]]; then
+    return 0
+  fi
+
+  mkdir -p "$exec_dir"
+  exec_name="$(basename "$exec_binary")"
+  download_url="https://github.com/${github_repo}/releases/latest/download/${exec_name}"
+  if download_file "$download_url" "$exec_binary"; then
+    chmod +x "$exec_binary"
+    return 0
+  fi
+
+  echo "Unable to download latest binary ${exec_name} from GitHub releases for ${github_repo}."
+  exit 1
+}
+
+if [[ -x "$exec_shim" ]]; then
+  "$exec_shim" "$@"
+  exit 0
+fi
+
+exec_binary="$(resolve_exec_binary)"
+ensure_exec_binary "$exec_binary"
+
+ln -sfn "$(basename "$exec_binary")" "$exec_shim"
+
+"$exec_shim" "$@"

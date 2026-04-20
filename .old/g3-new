@@ -1,0 +1,104 @@
+
+
+#!/usr/bin/env bash
+set -eou pipefail
+
+readonly GITHUB_REPO="khalidx/g3"
+readonly GITHUB_REPO_RELEASES_URL="https://github.com/${GITHUB_REPO}/releases/latest/download"
+readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_BRANCH="release/0.1.0"
+readonly REPO_EXEC_DIR="${REPO_ROOT}/exec"
+
+check_command_exists () {
+  local name="$1"
+  if ! command -v "$name" >/dev/null 2>&1; then
+    return 1
+  fi
+}
+
+detect_release_asset () {
+  local os
+  local arch
+
+  os="$(uname -s)"
+  arch="$(uname -m)"
+
+  case "${os}:${arch}" in
+    Linux:x86_64)
+      printf '%s\n' 'g3-linux-x64'
+      ;;
+    Darwin:x86_64)
+      printf '%s\n' 'g3-darwin-x64'
+      ;;
+    MINGW64_NT-*:x86_64|MSYS_NT-*:x86_64|CYGWIN_NT-*:x86_64)
+      printf '%s\n' 'g3-windows-x64.exe'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+download_release_binary () {
+  local asset_name="$1"
+  local destination_file="${REPO_EXEC_DIR}/${asset_name}"
+  local tmp_file="${destination_file}.tmp"
+  local url="${GITHUB_REPO_RELEASES_URL}/${asset_name}"
+
+  mkdir -p "$REPO_EXEC_DIR"
+  rm -f "$tmp_file"
+
+  if check_command_exists "curl"; then
+    curl --fail --silent --show-error --location "$url" --output "$tmp_file"
+  elif check_command_exists "wget"; then
+    wget --quiet --output-document="$tmp_file" "$url"
+  else
+    return 1
+  fi
+
+  chmod +x "$tmp_file"
+  mv "$tmp_file" "$destination_file"
+  printf '%s\n' "$destination_file"
+}
+
+fetch_and_rebuild_binary () {
+  check_command_exists "git" || {
+    echo "git is required when using --rebuild."
+    exit 1
+  }
+  check_command_exists "bun" || {
+    check_command_exists "npm" || {
+      echo "Neither bun nor npm (node) found; please install one of these to rebuild the g3 CLI."
+      exit 1
+    }
+    npm install -g bun
+  }
+
+  git -C "$REPO_ROOT" fetch origin "$REPO_BRANCH" --prune --tags
+  (cd "$REPO_ROOT" && bun run build:binaries)
+}
+
+rebuild=false
+forward_args=()
+for arg in "$@"; do
+  if [[ "$arg" == "--rebuild" ]]; then
+    rebuild=true
+    continue
+  fi
+  forward_args+=("$arg")
+done
+
+asset_name="$(detect_release_asset)" || {
+  echo "Unsupported platform: $(uname -s) $(uname -m)"
+  exit 1
+}
+
+binary_path="${REPO_EXEC_DIR}/${asset_name}"
+
+if $rebuild; then
+  fetch_and_rebuild_binary
+elif [[ ! -x "$binary_path" ]]; then
+  binary_path="$(download_release_binary "$asset_name")"
+fi
+
+exec "$binary_path" "${forward_args[@]}"

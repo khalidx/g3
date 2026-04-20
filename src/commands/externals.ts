@@ -1,9 +1,9 @@
-import { type Command, type External, ExternalsSchema } from '../types'
-import { readFileIfExists, appendOrReplaceFileSection } from '../lib/filesystem'
-import { spawnCommand } from '../lib/spawn'
+import { type Command, type External, ExternalsSchema } from '../types.ts'
+import { pathExists, readFileIfExists, appendOrReplaceFileSection } from '../lib/filesystem.ts'
+import { spawnCommand } from '../lib/spawn.ts'
 
-import { blue, green, bold } from 'picocolors'
-import { exists, lstat, mkdir, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import pc from 'picocolors'
+import fs from 'node:fs/promises'
 import path from 'node:path'
 
 async function loadExternalsConfig (params: { cwd: string }) {
@@ -77,7 +77,7 @@ async function generateAndSyncWorkspaceConfig (params: {
 
   // Write the workspace config
   const workspaceConfig: CodeWorkspace = { ...existingWorkspace, folders, settings }
-  await writeFile(workspaceConfigPath, JSON.stringify(workspaceConfig, null, 2) + '\n')
+  await fs.writeFile(workspaceConfigPath, JSON.stringify(workspaceConfig, null, 2) + '\n')
   return workspaceConfigPath
 }
 
@@ -101,8 +101,8 @@ async function syncExternal (params: { cwd: string, external: External }) {
   const repoDir = path.join(externalsDirectory, params.external.source.repo)
   const targetDir = path.join(params.cwd, params.external.target)
 
-  if (!(await exists(path.join(repoDir, '.git')))) {
-    await mkdir(path.dirname(repoDir), { recursive: true })
+  if (!(await pathExists({ path: path.join(repoDir, '.git') }))) {
+    await fs.mkdir(path.dirname(repoDir), { recursive: true })
     await spawnCommand({ cmd: ['git', 'clone', '--filter=blob:none', `https://github.com/${params.external.source.repo}`, repoDir], cwd: params.cwd })
   }
 
@@ -111,16 +111,16 @@ async function syncExternal (params: { cwd: string, external: External }) {
   await spawnCommand({ cmd: ['git', '-C', repoDir, 'checkout', params.external.source.ref], cwd: params.cwd })
   await spawnCommand({ cmd: ['git', '-C', repoDir, 'clean', '-fdx'], cwd: params.cwd })
 
-  await mkdir(targetDir, { recursive: true })
+  await fs.mkdir(targetDir, { recursive: true })
 
-  if (await exists(targetDir)) {
-    const localStat = await lstat(targetDir)
+  if (await pathExists({ path: targetDir })) {
+    const localStat = await fs.lstat(targetDir)
     if (localStat.isSymbolicLink()) {
-      const existingTarget = await readlink(targetDir)
+      const existingTarget = await fs.readlink(targetDir)
       const desiredTarget = path.relative(path.dirname(targetDir), path.join(repoDir, params.external.source.path))
       if (existingTarget === desiredTarget) return { targetDir }
     }
-    await rm(targetDir, { recursive: true, force: true })
+    await fs.rm(targetDir, { recursive: true, force: true })
   }
 
   const isWindows = process.platform === 'win32'
@@ -129,7 +129,7 @@ async function syncExternal (params: { cwd: string, external: External }) {
     ? path.join(repoDir, params.external.source.path)
     : path.relative(path.dirname(targetDir), path.join(repoDir, params.external.source.path))
   ;
-  await symlink(symlinkTarget, targetDir, linkType)
+  await fs.symlink(symlinkTarget, targetDir, linkType)
   return { targetDir }
 }
 
@@ -168,11 +168,11 @@ export const command: Command = {
       }
       console.info('-'.repeat(process.stdout.columns))
       console.info(`Generated workspace config at ${workspaceConfigGenerated}`)
-      console.info(`If you haven't already, to ${bold(blue('open the workspace'))} in VSCode, run:`)
+      console.info(`If you haven't already, to ${pc.bold(pc.blue('open the workspace'))} in VSCode, run:`)
       console.info('  code .externals/externals.code-workspace')
       console.info('Or use the VSCode UI: File > Open Workspace from File...')
       console.info('-'.repeat(process.stdout.columns))
-      console.info(`git externals | ${green('success')}`)
+      console.info(`git externals | ${pc.green('success')}`)
     }
   }
 }

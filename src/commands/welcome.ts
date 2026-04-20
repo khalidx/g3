@@ -1,14 +1,14 @@
-import type { Command } from '../types'
-import packageJson from '../../package.json'
+import type { Command } from '../types.ts'
+import packageJson from '../../package.json' with { type: 'json' }
 
-import { gray, blue, italic, bold } from 'picocolors'
+import pc from 'picocolors'
 
 const welcomeMessage = `
 ╭─╴╭─╮
-│╶╮╶─┤   v${gray(packageJson.version)} | ${italic('Welcome')} to the ${bold(blue('g3'))} CLI!
+│╶╮╶─┤   v${pc.gray(packageJson.version)} | ${pc.italic('Welcome')} to the ${pc.bold(pc.blue('g3'))} CLI!
 ╰─╯╰─╯
 
-Usage: ${blue('g3')} ${gray('<command> [options]')}
+Usage: ${pc.blue('g3')} ${pc.gray('<command> [options]')}
 `
 
 export const command: Command = {

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -eou pipefail
 
-git g3 externals "$@"
+g3 externals "$@"
